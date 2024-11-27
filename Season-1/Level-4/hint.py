@@ -1,10 +1,17 @@
 import sqlite3
 
-# Vulnerable
+# Secure
 con = sqlite3.connect('users.db')
+
+# Securely inserting data using parameterized query
 user_input = "Mary"
-sql_stmt = "INSERT INTO Users (user) VALUES ('" + user_input + "');"
-con.executescript(sql_stmt)
+sql_stmt = "INSERT INTO Users (user) VALUES (?);"
+con.execute(sql_stmt, (user_input,))
+con.commit()
+
+# Always close the connection
+con.close()
+
 
 """
 The above code is vulnerable to SQL injection because user_input is
