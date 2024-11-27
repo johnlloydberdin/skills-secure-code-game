@@ -16,18 +16,28 @@ from collections import namedtuple
 Order = namedtuple('Order', 'id, items')
 Item = namedtuple('Item', 'type, description, amount, quantity')
 
+MAX_PRODUCT_AMOUNT = 10_000_000  # Example threshold in cents for product totals.
+
 def validorder(order: Order):
     net = 0
+    product_total = 0  # Track product totals for separate threshold enforcement.
 
     for item in order.items:
         if item.type == 'payment':
-            net += item.amount
+            net += int(round(item.amount * 100))  # Convert to cents
         elif item.type == 'product':
-            net -= item.amount * item.quantity
+            product_amount = int(round(item.amount * 100 * item.quantity))  # Convert to cents
+            product_total += product_amount
+            net -= product_amount
         else:
             return "Invalid item type: %s" % item.type
 
+        # Check if product totals exceed the maximum allowable amount
+        if product_total > MAX_PRODUCT_AMOUNT:
+            return "Total amount payable for an order exceeded"
+
     if net != 0:
-        return "Order ID: %s - Payment imbalance: $%0.2f" % (order.id, net)
+        return "Order ID: %s - Payment imbalance: $%0.2f" % (order.id, net / 100.0)  # Convert back to dollars
     else:
         return "Order ID: %s - Full payment received!" % order.id
+
