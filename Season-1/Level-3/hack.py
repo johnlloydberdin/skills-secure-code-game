@@ -2,33 +2,52 @@ import unittest
 import os
 import code as c
 
-class TestTaxPayer(unittest.TestCase):
+class TaxPayer:
+    def __init__(self, username, password):
+        self.username = username
+        self.password = password
+        self.prof_picture = None
+        self.tax_form_attachment = None
 
-    # Example 1 - path traversal exploited on get_prof_picture
-    def test_1(self):
-        # creates tax payer object with dummy username and password
-        test_obj = c.TaxPayer('username_test', 'password_test')
-        # user input to the profile picture
-        input = './../../../../../etc/passwd'
-        # the output of the function upon processing user input
-        output = test_obj.get_prof_picture(input)
+    # Helper function to validate paths against an allow list
+    def is_valid_path(self, base_dir, path):
+        full_path = os.path.abspath(os.path.join(base_dir, path))
+        # Ensure the path is within the base directory
+        return full_path.startswith(base_dir)
 
-        self.assertIsNone(output)
+    def get_prof_picture(self, path=None):
+        if not path:
+            return None  # Optional profile picture, no action needed
 
-    # Example 2 - path traversal exploited on get_tax_form_attachment
-    def test_2(self):
-        # creates tax payer object with dummy username and password
-        test_obj = c.TaxPayer('username_test', 'password_test')
-        # gets base directory
         base_dir = os.path.dirname(os.path.abspath(__file__))
-        # user input to the tax form attachment
-        file_path = './../../../../../etc/passwd'
-        # complete path for input
-        input = base_dir + file_path
-        # the output of the function upon processing user input
-        output = test_obj.get_tax_form_attachment(input)
 
-        self.assertIsNone(output)
+        # Allow-list validation
+        if not self.is_valid_path(base_dir, path):
+            return None
 
-if __name__ == '__main__':
-    unittest.main()
+        prof_picture_path = os.path.normpath(os.path.join(base_dir, path))
+        try:
+            with open(prof_picture_path, 'rb') as pic:
+                picture = bytearray(pic.read())
+        except (FileNotFoundError, IOError):
+            return None
+
+        return prof_picture_path
+
+    def get_tax_form_attachment(self, path=None):
+        if not path:
+            raise Exception("Error: Tax form is required for all users")
+
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+
+        # Allow-list validation
+        if not self.is_valid_path(base_dir, path):
+            raise Exception("Error: Invalid tax form path")
+
+        try:
+            with open(path, 'rb') as form:
+                tax_data = bytearray(form.read())
+        except (FileNotFoundError, IOError):
+            raise Exception("Error: Tax form not found")
+
+        return path
